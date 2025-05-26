@@ -1,7 +1,11 @@
 import express from 'express';
 // import docsRoute from './docs.route';
 // import config from '../../config/config';
+import authRoute from './auth.route';
 import userRoute from './user.route';
+import roleRoute from './role.route';
+import permissionRoute from './permission.route';
+import menuRoute from './menu.route';
 
 const indexRouter = express.Router();
 
@@ -12,8 +16,24 @@ interface RouteConfig {
 
 const defaultRoutes: RouteConfig[] = [
   {
+    path: '/auth',
+    route: authRoute,
+  },
+  {
     path: '/users',
     route: userRoute,
+  },
+  {
+    path: '/roles',
+    route: roleRoute,
+  },
+  {
+    path: '/permissions',
+    route: permissionRoute,
+  },
+  {
+    path: '/menus',
+    route: menuRoute,
   },
 ];
 

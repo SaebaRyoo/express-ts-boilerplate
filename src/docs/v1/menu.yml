@@ -1,0 +1,485 @@
+openapi: 3.0.0
+info:
+  title: Menu API
+  description: Menu management API endpoints
+  version: 1.0.0
+
+paths:
+  /menus:
+    post:
+      summary: Create a new menu
+      description: Create a new menu in the system
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuInput'
+      responses:
+        '201':
+          description: Menu created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Menu'
+        '400':
+          description: Bad request - Menu name already exists
+        '401':
+          description: Unauthorized
+    get:
+      summary: Get all menus with pagination
+      description: Get a list of all menus with pagination and filtering
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter by menu name
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: ['menu', 'button']
+          description: Filter by menu type
+        - in: query
+          name: parentId
+          schema:
+            type: string
+          description: Filter by parent menu ID
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+          description: Filter by active status
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: 'Sort by field in format: field:(desc|asc)'
+          example: 'sort:asc'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of menus per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+      responses:
+        '200':
+          description: Menus retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Menu'
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  totalResults:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+  /menus/select:
+    get:
+      summary: Get all menus for selection
+      description: Get all active menus in simple format for dropdown/select components
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Menus retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuSimple'
+        '401':
+          description: Unauthorized
+
+  /menus/user-menus:
+    post:
+      summary: Get user menus
+      description: Get menus based on user roles
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roles
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of role IDs
+                  example: ['role1', 'role2']
+      responses:
+        '200':
+          description: User menus retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Menu'
+        '400':
+          description: Bad request - Invalid roles
+        '401':
+          description: Unauthorized
+
+  /menus/user-menus-tree:
+    post:
+      summary: Get user menus tree
+      description: Get user menus in tree structure based on roles
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roles
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of role IDs
+                  example: ['role1', 'role2']
+      responses:
+        '200':
+          description: User menus tree retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MenuTree'
+        '400':
+          description: Bad request - Invalid roles
+        '401':
+          description: Unauthorized
+
+  /menus/{menuId}:
+    get:
+      summary: Get menu by ID
+      description: Get a specific menu by its ID
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: menuId
+          required: true
+          schema:
+            type: string
+          description: Menu ID
+      responses:
+        '200':
+          description: Menu retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Menu'
+        '404':
+          description: Menu not found
+        '401':
+          description: Unauthorized
+    patch:
+      summary: Update menu
+      description: Update menu information
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: menuId
+          required: true
+          schema:
+            type: string
+          description: Menu ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuUpdate'
+      responses:
+        '200':
+          description: Menu updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Menu'
+        '400':
+          description: Bad request - Menu name already exists
+        '401':
+          description: Unauthorized
+        '404':
+          description: Menu not found
+    delete:
+      summary: Delete menu
+      description: Delete a menu by ID
+      tags:
+        - Menus
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: menuId
+          required: true
+          schema:
+            type: string
+          description: Menu ID
+      responses:
+        '204':
+          description: Menu deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: Menu not found
+
+components:
+  schemas:
+    Menu:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique menu identifier
+        name:
+          type: string
+          maxLength: 100
+          description: Menu name
+          example: '用户管理'
+        type:
+          type: string
+          enum: ['menu', 'button']
+          description: Menu type
+          example: 'menu'
+        path:
+          type: string
+          maxLength: 200
+          description: Menu path/route
+          example: '/users'
+        component:
+          type: string
+          maxLength: 200
+          description: Component path
+          example: 'views/users/index'
+        icon:
+          type: string
+          maxLength: 100
+          description: Menu icon
+          example: 'user'
+        sort:
+          type: integer
+          description: Sort order
+          example: 1
+        parentId:
+          type: string
+          format: uuid
+          description: Parent menu ID
+          nullable: true
+        isActive:
+          type: boolean
+          description: Whether the menu is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Menu creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Menu last update timestamp
+
+    MenuSimple:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique menu identifier
+        name:
+          type: string
+          description: Menu name
+          example: '用户管理'
+        type:
+          type: string
+          enum: ['menu', 'button']
+          description: Menu type
+          example: 'menu'
+        parentId:
+          type: string
+          format: uuid
+          description: Parent menu ID
+          nullable: true
+
+    MenuTree:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique menu identifier
+        name:
+          type: string
+          description: Menu name
+          example: '用户管理'
+        type:
+          type: string
+          enum: ['menu', 'button']
+          description: Menu type
+          example: 'menu'
+        path:
+          type: string
+          description: Menu path/route
+          example: '/users'
+        component:
+          type: string
+          description: Component path
+          example: 'views/users/index'
+        icon:
+          type: string
+          description: Menu icon
+          example: 'user'
+        sort:
+          type: integer
+          description: Sort order
+          example: 1
+        parentId:
+          type: string
+          format: uuid
+          description: Parent menu ID
+          nullable: true
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuTree'
+          description: Child menus
+
+    MenuInput:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Menu name
+          example: '用户管理'
+        type:
+          type: string
+          enum: ['menu', 'button']
+          description: Menu type
+          example: 'menu'
+        path:
+          type: string
+          maxLength: 200
+          description: Menu path/route
+          example: '/users'
+        component:
+          type: string
+          maxLength: 200
+          description: Component path
+          example: 'views/users/index'
+        icon:
+          type: string
+          maxLength: 100
+          description: Menu icon
+          example: 'user'
+        sort:
+          type: integer
+          description: Sort order
+          default: 0
+        parentId:
+          type: string
+          format: uuid
+          description: Parent menu ID
+          nullable: true
+        isActive:
+          type: boolean
+          description: Whether the menu is active
+          default: true
+
+    MenuUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Menu name
+          example: '用户管理'
+        type:
+          type: string
+          enum: ['menu', 'button']
+          description: Menu type
+          example: 'menu'
+        path:
+          type: string
+          maxLength: 200
+          description: Menu path/route
+          example: '/users'
+        component:
+          type: string
+          maxLength: 200
+          description: Component path
+          example: 'views/users/index'
+        icon:
+          type: string
+          maxLength: 100
+          description: Menu icon
+          example: 'user'
+        sort:
+          type: integer
+          description: Sort order
+        parentId:
+          type: string
+          format: uuid
+          description: Parent menu ID
+          nullable: true
+        isActive:
+          type: boolean
+          description: Whether the menu is active

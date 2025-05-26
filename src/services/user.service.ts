@@ -1,24 +1,10 @@
 import httpStatus from 'http-status';
-import { In, Repository, Not, FindOptionsWhere } from 'typeorm';
+import { Repository, Not, FindOptionsWhere, In } from 'typeorm';
 import { AppDataSource } from '../config/typeorm.config';
+import { User } from '../models/entities/user.entity';
+import { Role } from '../models/entities/role.entity';
 import ApiError from '../utils/ApiError';
-
-// 定义类型
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  isEmailVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  roles: Role[];
-}
-
-interface Role {
-  id: string;
-  name: string;
-}
+import bcrypt from 'bcryptjs';
 
 interface QueryResult {
   results: User[];
@@ -41,6 +27,14 @@ interface QueryOptions {
 }
 
 const UserRepository: Repository<User> = AppDataSource.getRepository('User');
+const RoleRepository: Repository<Role> = AppDataSource.getRepository('Role');
+
+/**
+ * 哈希密码
+ */
+const hashPassword = async (password: string): Promise<string> => {
+  return bcrypt.hash(password, 8);
+};
 
 /**
  * Create a user
@@ -52,6 +46,12 @@ const createUser = async (userBody: Partial<User>): Promise<User> => {
   if (existingUser) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
+
+  // 加密密码
+  if (userBody.password) {
+    userBody.password = await hashPassword(userBody.password);
+  }
+
   const user = UserRepository.create(userBody);
   return UserRepository.save(user);
 };
@@ -81,6 +81,7 @@ const queryUsers = async (filter: UserFilterOptions, options: QueryOptions): Pro
     skip,
     take: limit,
     order: orderBy,
+    relations: ['roles'],
   });
 
   return {
@@ -98,7 +99,10 @@ const queryUsers = async (filter: UserFilterOptions, options: QueryOptions): Pro
  * @returns {Promise<User>}
  */
 const getUserById = async (id: string): Promise<User | null> => {
-  return UserRepository.findOneBy({ id });
+  return UserRepository.findOne({
+    where: { id },
+    relations: ['roles'],
+  });
 };
 
 /**
@@ -109,7 +113,8 @@ const getUserById = async (id: string): Promise<User | null> => {
 const getUserByEmail = async (email: string): Promise<User | null> => {
   return UserRepository.findOne({
     where: { email },
-    select: ['id', 'name', 'email', 'password', 'isEmailVerified', 'createdAt', 'updatedAt', 'roles'],
+    select: ['id', 'name', 'email', 'password', 'isEmailVerified', 'createdAt', 'updatedAt'],
+    relations: ['roles'],
   });
 };
 
@@ -135,6 +140,11 @@ const updateUserById = async (userId: string, updateBody: Partial<User>): Promis
     if (existingUser) {
       throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
     }
+  }
+
+  // 如果更新密码，需要加密
+  if (updateBody.password) {
+    updateBody.password = await hashPassword(updateBody.password);
   }
 
   Object.assign(user, updateBody);
@@ -167,10 +177,9 @@ const setUserRoles = async (userId: string, roleIds: string[]): Promise<User> =>
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
-  const RoleRepository = AppDataSource.getRepository('Role');
-  const roles = (await RoleRepository.findBy({
-    id: In(roleIds),
-  })) as Role[];
+  const roles = await RoleRepository.find({
+    where: { id: In(roleIds) },
+  });
 
   if (roles.length !== roleIds.length) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'One or more roles not found');

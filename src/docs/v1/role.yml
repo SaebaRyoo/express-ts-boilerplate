@@ -1,0 +1,425 @@
+openapi: 3.0.0
+info:
+  title: Role API
+  description: Role management API endpoints
+  version: 1.0.0
+
+paths:
+  /roles:
+    post:
+      summary: Create a new role
+      description: Create a new role in the system
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleInput'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Bad request - Role name already exists
+        '401':
+          description: Unauthorized
+    get:
+      summary: Get all roles with pagination
+      description: Get a list of all roles with pagination and filtering
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Filter by role name
+        - in: query
+          name: isActive
+          schema:
+            type: boolean
+          description: Filter by active status
+        - in: query
+          name: sortBy
+          schema:
+            type: string
+          description: 'Sort by field in format: field:(desc|asc)'
+          example: 'name:asc'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+          description: Number of roles per page
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Page number
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  totalResults:
+                    type: integer
+        '401':
+          description: Unauthorized
+
+  /roles/all:
+    get:
+      summary: Get all roles for selection
+      description: Get all active roles in simple format for dropdown/select components
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Roles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleSimple'
+        '401':
+          description: Unauthorized
+
+  /roles/{roleId}:
+    get:
+      summary: Get role by ID
+      description: Get a specific role by its ID including associated menus and permissions
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      responses:
+        '200':
+          description: Role retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '404':
+          description: Role not found
+        '401':
+          description: Unauthorized
+    patch:
+      summary: Update role
+      description: Update role information
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleUpdate'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Bad request - Role name already exists
+        '401':
+          description: Unauthorized
+        '404':
+          description: Role not found
+    delete:
+      summary: Delete role
+      description: Delete a role by ID. Cannot delete if role has associated users.
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      responses:
+        '204':
+          description: Role deleted successfully
+        '400':
+          description: Bad request - Role has associated users
+        '401':
+          description: Unauthorized
+        '404':
+          description: Role not found
+
+  /roles/{roleId}/menus:
+    post:
+      summary: Set role menus
+      description: Set menus associated with a specific role
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menuIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of menu IDs
+                  example: ['menu-id-1', 'menu-id-2']
+              required:
+                - menuIds
+      responses:
+        '200':
+          description: Role menus updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Bad request - Some menus do not exist
+        '401':
+          description: Unauthorized
+        '404':
+          description: Role not found
+
+  /roles/{roleId}/permissions:
+    post:
+      summary: Set role permissions
+      description: Set permissions associated with a specific role
+      tags:
+        - Roles
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: roleId
+          required: true
+          schema:
+            type: string
+          description: Role ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permissionIds:
+                  type: array
+                  items:
+                    type: string
+                  description: Array of permission IDs
+                  example: ['permission-id-1', 'permission-id-2']
+              required:
+                - permissionIds
+      responses:
+        '200':
+          description: Role permissions updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          description: Bad request - Some permissions do not exist
+        '401':
+          description: Unauthorized
+        '404':
+          description: Role not found
+
+components:
+  schemas:
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique role identifier
+        name:
+          type: string
+          maxLength: 50
+          description: Role name
+          example: '管理员'
+        description:
+          type: string
+          maxLength: 200
+          description: Role description
+          example: '系统管理员角色'
+        isActive:
+          type: boolean
+          description: Whether the role is active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Role creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Role last update timestamp
+        menus:
+          type: array
+          items:
+            $ref: '#/components/schemas/Menu'
+          description: Associated menus
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+          description: Associated permissions
+
+    RoleSimple:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique role identifier
+        name:
+          type: string
+          description: Role name
+          example: '管理员'
+        description:
+          type: string
+          description: Role description
+          example: '系统管理员角色'
+
+    RoleInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          description: Role name
+          example: '管理员'
+        description:
+          type: string
+          maxLength: 200
+          description: Role description
+          example: '系统管理员角色'
+        isActive:
+          type: boolean
+          description: Whether the role is active
+          default: true
+
+    RoleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 50
+          description: Role name
+          example: '管理员'
+        description:
+          type: string
+          maxLength: 200
+          description: Role description
+          example: '系统管理员角色'
+        isActive:
+          type: boolean
+          description: Whether the role is active
+
+    Menu:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        title:
+          type: string
+        path:
+          type: string
+        icon:
+          type: string
+        component:
+          type: string
+        sort:
+          type: integer
+        isVisible:
+          type: boolean
+        isActive:
+          type: boolean
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        action:
+          type: string
+        resource:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        isActive:
+          type: boolean

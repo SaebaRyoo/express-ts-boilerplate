@@ -2,23 +2,13 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  BeforeInsert,
-  BeforeUpdate,
-  //   ManyToMany,
-  //   JoinTable,
+  ManyToMany,
+  JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import bcrypt from 'bcryptjs';
-// import { Role } from './role.entity';
-
-const comparePassword = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
-  return bcrypt.compare(plainPassword, hashedPassword);
-};
-
-const hashPassword = async (password: string): Promise<string> => {
-  return bcrypt.hash(password, 8);
-};
+import { Role } from './role.entity';
 
 @Entity('users')
 export class User {
@@ -43,36 +33,23 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-  //   @ManyToMany(() => Role)
-  //   @JoinTable({
-  //     name: 'users_roles',
-  //     joinColumn: {
-  //       name: 'user_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //     inverseJoinColumn: {
-  //       name: 'role_id',
-  //       referencedColumnName: 'id',
-  //     },
-  //   })
-  //   roles!: Role[];
-
-  @BeforeInsert()
-  async hashPasswordBeforeInsert() {
-    if (this.password) {
-      this.password = await hashPassword(this.password);
-    }
-  }
-
-  @BeforeUpdate()
-  async hashPasswordBeforeUpdate() {
-    if (this.password) {
-      this.password = await hashPassword(this.password);
-    }
-  }
+  // 与角色的多对多关系
+  @ManyToMany(() => Role, (role) => role.users)
+  @JoinTable({
+    name: 'users_roles',
+    joinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'role_id',
+      referencedColumnName: 'id',
+    },
+  })
+  roles!: Role[];
 
   async isPasswordMatch(password: string): Promise<boolean> {
-    return comparePassword(password, this.password);
+    return bcrypt.compare(password, this.password);
   }
 
   toJSON() {

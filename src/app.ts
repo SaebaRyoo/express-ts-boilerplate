@@ -7,8 +7,8 @@ import cors from 'cors';
 import httpStatus from 'http-status';
 import config from './config/config';
 import morgan from './config/morgan';
-// import passport from 'passport';
-// import { jwtStrategy } from './config/passport';
+import passport from 'passport';
+import { jwtStrategy } from './config/passport.strategy.config';
 import routes from './routes/v1';
 import { errorConverter, errorHandler } from './middlewares/error';
 import ApiError from './utils/ApiError';
@@ -44,8 +44,8 @@ app.use(cors());
 app.options('/{*cors}', cors());
 
 // jwt authentication
-// app.use(passport.initialize());
-// passport.use('jwt', jwtStrategy);
+app.use(passport.initialize() as unknown as express.RequestHandler);
+passport.use('jwt', jwtStrategy);
 
 // setup swagger docs
 if (config.env === 'development') {

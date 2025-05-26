@@ -16,6 +16,21 @@ const v1Options: swaggerJsdoc.Options = {
         description: 'V1 API',
       },
     ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: '请输入JWT token',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
   apis: ['./src/docs/v1/*.yml'],
 };
@@ -32,6 +47,21 @@ const v2Options: swaggerJsdoc.Options = {
       {
         url: '/v2',
         description: 'V2 API',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: '请输入JWT token',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
       },
     ],
   },
